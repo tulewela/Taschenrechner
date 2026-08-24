@@ -1,28 +1,25 @@
-# Let's create the text files and also provide a zip archive if needed, or simply output the cleanly formatted code blocks.
-# The user wants code blocks for app.py, requirements.txt, and README.md.
-
-app_py_content = '''import streamlit as st
+import streamlit as st
 
 # -----------------------------------------------------------------------------
-# Page Configuration & Styling
+# Seite & Style-Konfiguration
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Python Streamlit Taschenrechner",
+    page_title="Taschenrechner App",
     page_icon="🧮",
     layout="centered"
 )
 
-# Custom CSS for a modern calculator UI look
+# Custom CSS für echtes Taschenrechner-Design
 st.markdown("""
 <style>
-    /* Main container centering */
+    /* Haupt-Container zentrieren und schmaler halten */
     .block-container {
-        max-width: 420px;
+        max-width: 400px;
         padding-top: 2rem;
         padding-bottom: 2rem;
     }
     
-    /* Calculator Screen Styling */
+    /* Hauptdisplay Styling */
     .calc-screen {
         background-color: #1e1e2e;
         color: #a6e3a1;
@@ -41,24 +38,25 @@ st.markdown("""
         justify-content: flex-end;
     }
     
-    /* Secondary expression sub-screen */
+    /* Hilfsanzeige für die aktuelle Rechnung oben rechts */
     .calc-subscreen {
         color: #a6adc8;
-        font-size: 0.9rem;
+        font-size: 0.95rem;
+        font-family: monospace;
         text-align: right;
-        margin-bottom: -15px;
+        margin-bottom: 4px;
         padding-right: 5px;
         height: 20px;
     }
 
-    /* Standardizing button sizes */
+    /* Buttons vereinheitlichen */
     div.stButton > button {
         width: 100%;
         height: 60px;
         font-size: 1.4rem !important;
         font-weight: bold !important;
         border-radius: 10px !important;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
         transition: all 0.1s ease-in-out;
     }
     
@@ -69,7 +67,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# Session State Initialization
+# Zustandsverwaltung (Session State)
 # -----------------------------------------------------------------------------
 if 'display' not in st.session_state:
     st.session_state.display = '0'
@@ -81,17 +79,17 @@ if 'error_state' not in st.session_state:
     st.session_state.error_state = False
 
 # -----------------------------------------------------------------------------
-# Helper Functions for Calculator Operations
+# Logik-Funktionen
 # -----------------------------------------------------------------------------
 def reset_calc():
-    """Resets the calculator state."""
+    """Setzt den gesamten Taschenrechner zurück."""
     st.session_state.display = '0'
     st.session_state.expression = ''
     st.session_state.new_input = False
     st.session_state.error_state = False
 
 def press_digit(digit):
-    """Handles digit button clicks (0-9 and decimal point)."""
+    """Verarbeitet die Eingabe von Ziffern und dem Dezimalpunkt."""
     if st.session_state.error_state:
         reset_calc()
     
@@ -102,22 +100,20 @@ def press_digit(digit):
         if st.session_state.display == '0' and digit != '.':
             st.session_state.display = digit
         elif digit == '.':
-            # Prevent multiple decimal points in current number segment
-            # Find current operand by splitting on operators
-            current_val = st.session_state.display
-            if '.' not in current_val:
+            # Verhindert mehrfache Punkte in einer Zahl
+            if '.' not in st.session_state.display:
                 st.session_state.display += '.'
         else:
             st.session_state.display += digit
 
 def press_operator(op):
-    """Handles operator button clicks (+, -, *, /)."""
+    """Verarbeitet Operatoren (+, -, *, /)."""
     if st.session_state.error_state:
         return
 
-    # Prepare string for math evaluation
     disp = st.session_state.display.rstrip('.')
     
+    # Falls bereits eine Operation aussteht, berechne Zwischenergebnis
     if st.session_state.expression and not st.session_state.new_input:
         calculate_result()
         disp = st.session_state.display
@@ -126,25 +122,25 @@ def press_operator(op):
     st.session_state.new_input = True
 
 def calculate_result():
-    """Evaluates the mathematical expression."""
+    """Führt die mathematische Berechnung aus."""
     if st.session_state.error_state or not st.session_state.expression:
         return
 
-    expr = st.session_state.expression + " " + st.session_state.display.rstrip('.')
+    full_expr = f"{st.session_state.expression} {st.session_state.display.rstrip('.')}"
     
-    # Replace visual/safe operators if needed
-    clean_expr = expr.replace('×', '*').replace('÷', '/')
+    # Umwandlung für Python-Auswertung
+    clean_expr = full_expr.replace('×', '*').replace('÷', '/')
     
     try:
-        # Evaluate safely
+        # Sichere Auswertung des Ausdrucks
         result = eval(clean_expr, {"__builtins__": None}, {})
         
-        # Format result (integer vs float)
+        # Formatierung: Ganze Zahlen ohne Nachkommastellen anzeigen
         if isinstance(result, float):
             if result.is_integer():
                 result = int(result)
             else:
-                result = round(result, 8)  # prevent floating point precision issues
+                result = round(result, 8)  # Rundung gegen Floating-Point-Ungenauigkeiten
                 
         st.session_state.display = str(result)
         st.session_state.expression = ''
@@ -160,11 +156,11 @@ def calculate_result():
         st.session_state.error_state = True
 
 def press_clear():
-    """Clears display and resets memory."""
+    """C: Alles zurücksetzen."""
     reset_calc()
 
 def press_delete():
-    """Deletes the last typed digit."""
+    """DEL: Letztes Zeichen löschen."""
     if st.session_state.error_state or st.session_state.new_input:
         return
     
@@ -175,7 +171,7 @@ def press_delete():
         st.session_state.display = '0'
 
 def press_toggle_sign():
-    """Toggles sign (+/-) of current entry."""
+    """+/-: Vorzeichen wechseln."""
     if st.session_state.error_state or st.session_state.display == '0':
         return
     
@@ -185,7 +181,7 @@ def press_toggle_sign():
         st.session_state.display = '-' + st.session_state.display
 
 def press_percent():
-    """Converts display number to percentage."""
+    """%: In Prozent umrechnen."""
     if st.session_state.error_state:
         return
     try:
@@ -197,19 +193,18 @@ def press_percent():
         pass
 
 # -----------------------------------------------------------------------------
-# User Interface Layout
+# Benutzeroberfläche (Grid Layout)
 # -----------------------------------------------------------------------------
 st.title("🧮 Taschenrechner")
 
-# Secondary Screen (shows operator in progress)
+# Neben-Display für laufende Rechnung
 subscreen_text = st.session_state.expression if st.session_state.expression else "&nbsp;"
 st.markdown(f'<div class="calc-subscreen">{subscreen_text}</div>', unsafe_allow_html=True)
 
-# Main Screen Display
+# Haupt-Display
 st.markdown(f'<div class="calc-screen">{st.session_state.display}</div>', unsafe_allow_html=True)
 
-# Button Grid Layout (5 rows x 4 columns)
-# Row 1: C | ⌫ | % | /
+# Reihe 1: C | ⌫ | % | ÷
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.button("C", on_click=press_clear, type="secondary")
@@ -218,9 +213,9 @@ with col2:
 with col3:
     st.button("%", on_click=press_percent, type="secondary")
 with col4:
-    st.button("÷", on_click=press_operator, args=('/',), type="primary")
+    st.button("÷", on_click=press_operator, args=('÷',), type="primary")
 
-# Row 2: 7 | 8 | 9 | *
+# Reihe 2: 7 | 8 | 9 | ×
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.button("7", on_click=press_digit, args=('7',))
@@ -229,9 +224,9 @@ with col2:
 with col3:
     st.button("9", on_click=press_digit, args=('9',))
 with col4:
-    st.button("×", on_click=press_operator, args=('*',), type="primary")
+    st.button("×", on_click=press_operator, args=('×',), type="primary")
 
-# Row 3: 4 | 5 | 6 | -
+# Reihe 3: 4 | 5 | 6 | -
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.button("4", on_click=press_digit, args=('4',))
@@ -242,7 +237,7 @@ with col3:
 with col4:
     st.button("-", on_click=press_operator, args=('-',), type="primary")
 
-# Row 4: 1 | 2 | 3 | +
+# Reihe 4: 1 | 2 | 3 | +
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.button("1", on_click=press_digit, args=('1',))
@@ -253,7 +248,7 @@ with col3:
 with col4:
     st.button("+", on_click=press_operator, args=('+',), type="primary")
 
-# Row 5: +/- | 0 | . | =
+# Reihe 5: +/- | 0 | . | =
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.button("+/-", on_click=press_toggle_sign)
@@ -263,9 +258,3 @@ with col3:
     st.button(".", on_click=press_digit, args=('.',))
 with col4:
     st.button("=", on_click=calculate_result, type="primary")
-'''
-
-with open("app.py", "w", encoding="utf-8") as f:
-    f.write(app_py_content)
-
-print("Created app.py successfully")
